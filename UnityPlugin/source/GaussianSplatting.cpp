@@ -136,6 +136,19 @@ void GaussianSplattingRenderer::Render(float* image_cuda, Matrix4f view_mat, Mat
 	int* rects = _fastCulling ? rect_cuda : nullptr;
 	float* boxmin = _cropping ? (float*)&_boxmin : nullptr;
 	float* boxmax = _cropping ? (float*)&_boxmax : nullptr;
+	// This is the only call to the CudaRasterizer
+
+	// Wystarczy dostosowac interfejs, nie wszystkie parametry sa zrozumiale: pierwsze 3 nie wiadomo co to jest, olewamy sa to alokatory pamięci
+	// plugin z unity nie korzysta z torcha
+	// Da sie to wszystko dostosowac do naszego interfejsu, to podmieniamy na rasterizer_forward
+	// 
+	// Dodac kolejny interfejs, który przyjmuje pointery
+	// 1. Wywalamy forwarda
+	// 2. rasterizer_settings -> tam tworze wszystkie parametry
+	// 3. No i wywoluje rasterizer_forward
+
+	// ona ma image_cuda i to jest pointerowe i on jest gdzieś wypełniamy
+	// U nas są zwracane tensory więc będzie też trzeba jakaś konwersje dodać
 	CudaRasterizer::Rasterizer::forward(
 		geomBufferFunc,
 		binningBufferFunc,
@@ -163,6 +176,8 @@ void GaussianSplattingRenderer::Render(float* image_cuda, Matrix4f view_mat, Mat
 		boxmin,
 		boxmax
 	);
+
+	DeepsenseCudaRasterizer::rasterizer_forward();
 }
 
 // Load the Gaussians from the given file.

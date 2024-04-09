@@ -74,8 +74,12 @@ else()
   list(APPEND UNITYNI_INCLUDE_DIRECTORIES ${GLEW_INCLUDE_DIRS})
 endif()
 
-add_subdirectory("dependencies/diff-gaussian-rasterization")
+add_subdirectory("dependencies/diff-gaussian-rasterization") # This should be changed to our implementation
 list(APPEND UNITYNI_LIBRARIES CudaRasterizer)
+
+add_subdirectory("dependencies/gaussian-splatting-rasterizer/cuda_rasterizer")
+list(APPEND UNITYNI_LIBRARIES DeepsenseCudaRasterizer)
+
 
 list(APPEND UNITYNI_INCLUDE_DIRECTORIES "dependencies/eigen/include")
 
