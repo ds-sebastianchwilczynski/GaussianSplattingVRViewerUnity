@@ -6,6 +6,8 @@
 #include <string>
 #include <sstream>
 
+#include "../dependencies/gaussian-splatting-rasterizer/cuda_rasterizer/cpp/ds_cuda_rasterizer/rasterizer_cuda.hpp"
+
 using namespace std;
 
 typedef	Eigen::Matrix<int, 3, 1, Eigen::DontAlign> Vector3i;
@@ -128,8 +130,12 @@ void GaussianSplattingRenderer::Render(float* image_cuda, Matrix4f view_mat, Mat
 	float tan_fovy = tan(fovy * 0.5f);
 	float tan_fovx = tan_fovy * aspect_ratio;
 
-	CUDA_SAFE_CALL(cudaMemcpy(view_cuda, view_mat.data(), sizeof(Matrix4f), cudaMemcpyHostToDevice));
-	CUDA_SAFE_CALL(cudaMemcpy(proj_cuda, proj_mat.data(), sizeof(Matrix4f), cudaMemcpyHostToDevice));
+	//We need row major
+	Matrix4f view_mat_transpose = view_mat.transpose();
+	Matrix4f proj_mat_transpose = proj_mat.transpose();
+
+	CUDA_SAFE_CALL(cudaMemcpy(view_cuda, view_mat_transpose.data(), sizeof(Matrix4f), cudaMemcpyHostToDevice));
+	CUDA_SAFE_CALL(cudaMemcpy(proj_cuda, proj_mat_transpose.data(), sizeof(Matrix4f), cudaMemcpyHostToDevice));
 	CUDA_SAFE_CALL(cudaMemcpy(cam_pos_cuda, &position, sizeof(float) * 3, cudaMemcpyHostToDevice));
 	
 	// Rasterize
@@ -149,35 +155,55 @@ void GaussianSplattingRenderer::Render(float* image_cuda, Matrix4f view_mat, Mat
 
 	// ona ma image_cuda i to jest pointerowe i on jest gdzieś wypełniamy
 	// U nas są zwracane tensory więc będzie też trzeba jakaś konwersje dodać
-	CudaRasterizer::Rasterizer::forward(
-		geomBufferFunc,
-		binningBufferFunc,
-		imgBufferFunc,
-		count, _sh_degree, 16,
-		background_cuda,
-		width, height,
+
+
+	// CudaRasterizer::Rasterizer::forward(
+	// 	geomBufferFunc,
+	// 	binningBufferFunc,
+	// 	imgBufferFunc,
+	// 	count, _sh_degree, 16,
+	// 	background_cuda,
+	// 	width, height,
+	// 	pos_cuda,
+	// 	shs_cuda,
+	// 	nullptr,
+	// 	opacity_cuda,
+	// 	scale_cuda,
+	// 	_scalingModifier,
+	// 	rot_cuda,
+	// 	nullptr,
+	// 	view_cuda,
+	// 	proj_cuda,
+	// 	cam_pos_cuda,
+	// 	tan_fovx,
+	// 	tan_fovy,
+	// 	false,
+	// 	image_cuda,
+	// 	nullptr,
+	// 	rects,
+	// 	boxmin,
+	// 	boxmax
+	// );
+
+	rasterizer_forward_core_deepsense(
 		pos_cuda,
 		shs_cuda,
-		nullptr,
 		opacity_cuda,
 		scale_cuda,
-		_scalingModifier,
 		rot_cuda,
-		nullptr,
+		count, // shady
 		view_cuda,
 		proj_cuda,
 		cam_pos_cuda,
+		width,
+		height,
 		tan_fovx,
 		tan_fovy,
-		false,
-		image_cuda,
-		nullptr,
-		rects,
-		boxmin,
-		boxmax
-	);
+		_scalingModifier,
+		_sh_degree,
+		image_cuda
+		);
 
-	DeepsenseCudaRasterizer::rasterizer_forward();
 }
 
 // Load the Gaussians from the given file.

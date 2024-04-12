@@ -77,8 +77,9 @@ endif()
 add_subdirectory("dependencies/diff-gaussian-rasterization") # This should be changed to our implementation
 list(APPEND UNITYNI_LIBRARIES CudaRasterizer)
 
+set(WITH_TORCH OFF CACHE BOOL "No torch dependecy for rasterizer" FORCE)
 add_subdirectory("dependencies/gaussian-splatting-rasterizer/cuda_rasterizer")
-list(APPEND UNITYNI_LIBRARIES DeepsenseCudaRasterizer)
+list(APPEND UNITYNI_LIBRARIES ds_cuda_rasterizer)
 
 
 list(APPEND UNITYNI_INCLUDE_DIRECTORIES "dependencies/eigen/include")
